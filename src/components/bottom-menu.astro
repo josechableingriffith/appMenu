@@ -1,0 +1,63 @@
+---
+// src/components/BottomMenu.astro
+const pathname = new URL(Astro.url).pathname;
+
+const baseClasses = "transition-all duration-300 ease-in-out inline-flex items-center justify-center focus:outline-none";
+
+// Función para verificar si el enlace está activo
+const activeClass = (path) => 
+    pathname === path 
+    ? `${baseClasses} bg-brand focus:ring-4 focus:ring-brand-medium shadow-xs rounded-full w-full focus:outline-none -translate-y-4` // Clase cuando está activo
+    : `${baseClasses}`;
+
+const activeClassSVG = (path) => 
+    `transition-transform duration-300 ${ pathname === path  ? "text-white w-8 h-8" : "mb-1 text-body group-hover:text-fg-brand"}`;
+
+---
+
+<header>
+    <div class="fixed z-40 h-16 max-w-lg -translate-x-1/2 bg-neutral-primary-soft border border-default rounded-full bottom-2 left-1/2" style="width: 90%">
+        <div class="grid h-full max-w-lg grid-cols-5 mx-auto">
+            <a href="/ingredientes" data-tooltip-target="tooltip-home" class={`inline-flex flex-col items-center justify-center px-5 rounded-s-full ${activeClass("/ingredientes")}`}>
+                <svg class={`w-6 h-6 ${activeClassSVG("/ingredientes")}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10.0419c-1.3902 0-1.3935-1.1249-4.20643-1.037-1.73056.05408-3.15551 2.2303-2.71168 5.3081C5.35949 16.2381 6.98619 21 8.99172 21c2.00548 0 2.07358-.8508 3.00828-.8508.9347 0 .8551.8508 3.0083.8508s3.6322-4.7619 3.9098-6.687c.4438-3.0778-.9811-5.25402-2.7117-5.3081-2.8129-.0879-2.8162 1.037-4.2064 1.037Zm2.3598-4.2126c-.8779.74829-1.8612.71957-2.7221.71957 0-.62576.0792-1.94012.8609-2.76911.7817-.82898 2.1271-.7664 2.6434-.7664 0 .59448.0956 2.06766-.7822 2.81594Z"/></svg>
+                <span class="sr-only">Ingredientes</span>
+            </a>
+            <div id="tooltip-home" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark rounded-base shadow-xs opacity-0 tooltip">
+                Ingredientes
+                <div class="tooltip-arrow" data-popper-arrow></div>
+            </div>
+            <a href="/recetas" data-tooltip-target="tooltip-wallet" class={`inline-flex flex-col items-center justify-center px-5 ${activeClass("/recetas")}`}>
+                <svg class={`w-6 h-6 ${activeClassSVG("/recetas")}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.03v13m0-13c-2.819-.831-4.715-1.076-8.029-1.023A.99.99 0 0 0 3 6v11c0 .563.466 1.014 1.03 1.007 3.122-.043 5.018.212 7.97 1.023m0-13c2.819-.831 4.715-1.076 8.029-1.023A.99.99 0 0 1 21 6v11c0 .563-.466 1.014-1.03 1.007-3.122-.043-5.018.212-7.97 1.023"/></svg>
+                <span class="sr-only">Recetas</span>
+            </a>
+            <div id="tooltip-wallet" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark rounded-base shadow-xs opacity-0 tooltip">
+                Recetas
+                <div class="tooltip-arrow" data-popper-arrow></div>
+            </div>
+            <a href="/" data-tooltip-target="tooltip-new" class={`inline-flex flex-col items-center justify-center text-white px-5 ${activeClass("/")}`}>
+                <svg class={`w-6 h-6 ${activeClassSVG("/")}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m4 12 8-8 8 8M6 10.5V19a1 1 0 0 0 1 1h3v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h3a1 1 0 0 0 1-1v-8.5"/></svg>
+                <span class="sr-only">Menú de la semana</span>
+            </a>
+            <div id="tooltip-new" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark rounded-base shadow-xs opacity-0 tooltip">
+                Menú de la semana
+                <div class="tooltip-arrow" data-popper-arrow></div>
+            </div>
+            <a href="/compras" data-tooltip-target="tooltip-settings" class={`inline-flex flex-col items-center justify-center px-5 ${activeClass("/compras")}`}>
+                <svg class={`w-6 h-6 ${activeClassSVG("/compras")}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3m0 3h6m-3 5h3m-6 0h.01M12 16h3m-6 0h.01M10 3v4h4V3h-4Z"/></svg>
+                <span class="sr-only">Lista de compras</span>
+            </a>
+            <div id="tooltip-settings" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark rounded-base shadow-xs opacity-0 tooltip">
+                Lista de compras
+                <div class="tooltip-arrow" data-popper-arrow></div>
+            </div>
+            <a href="/crear-menu" data-tooltip-target="tooltip-profile" class={`inline-flex flex-col items-center justify-center px-5 rounded-e-full ${activeClass("/crear-menu")}`}>
+                <svg class={`w-6 h-6 ${activeClassSVG("/crear-menu")}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7 7V5"/></svg>
+                <span class="sr-only">Hacer menú</span>
+            </a>
+            <div id="tooltip-profile" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark rounded-base shadow-xs opacity-0 tooltip">
+                Hacer menú
+                <div class="tooltip-arrow" data-popper-arrow></div>
+            </div>
+        </div>
+    </div>
+</header>

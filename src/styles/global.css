@@ -1,0 +1,44 @@
+@import "flowbite/src/themes/default";
+
+@plugin "flowbite/plugin";
+@source "../node_modules/flowbite";
+
+@theme {
+    /* main text color */
+    --color-body: var(--color-stone-600);
+    --color-body-subtle: var(--color-stone-500);
+
+    /* text heading colors */
+    --color-heading: var(--color-stone-900);
+
+    /* used for custom brand colors */
+    --color-fg-brand-subtle: var(--color-stone-200);
+    --color-fg-brand: var(--color-stone-950);
+    --color-fg-brand-strong: var(--color-stone-900);
+
+    /* used for status colors */
+    --color-fg-success: var(--color-green-700);
+    --color-fg-success-strong: var(--color-green-900);
+    --color-fg-danger: var(--color-red-700);
+    --color-fg-danger-strong: var(--color-red-900);
+    --color-fg-warning-subtle: var(--color-orange-600);
+    --color-fg-warning: var(--color-orange-900);
+    --color-fg-yellow: var(--color-yellow-400);
+    --color-fg-disabled: var(--color-stone-400);
+    --color-fg-purple: var(--color-purple-600);
+    --color-fg-cyan: var(--color-cyan-600);
+    --color-fg-indigo: var(--color-indigo-600);
+    --color-fg-pink: var(--color-pink-600);
+    --color-fg-lime: var(--color-lime-600);
+}
+
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "flowbite/src/themes/default";
+
+body {
+  /* Evita el rebote elástico en móviles y asegura que el scroll sea fluido */
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  padding-bottom: env(safe-area-inset-bottom);
+}

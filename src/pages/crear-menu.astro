@@ -1,0 +1,98 @@
+---
+import Layout from "../layouts/layout.astro";
+import { supabase } from "../lib/supabase";
+
+// 1. Obtener todas las recetas disponibles
+const { data: recetas } = await supabase
+  .from('recetas')
+  .select('platillo')
+  .order('platillo', { ascending: true });
+
+// Lógica para encontrar el PRÓXIMO jueves
+const hoy = new Date();
+const proximoJueves = new Date(hoy);
+proximoJueves.setDate(hoy.getDate() + ((4 - hoy.getDay() + 7) % 7));
+
+const semanaNueva = [];
+const nombres = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+for (let i = 0; i < 7; i++) {
+  const f = new Date(proximoJueves);
+  f.setDate(proximoJueves.getDate() + i);
+  semanaNueva.push({
+    iso: f.toISOString().split('T')[0],
+    nombre: nombres[f.getDay()],
+    diaMes: f.getDate()
+  });
+}
+---
+
+<Layout title="Planificar Menú">
+  <div class="mx-5 pb-15">
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold tracking-tight text-heading md:text-4xl mt-5">Plan de Comidas</h2>
+      <p class="text-body text-sm mt-1">Organiza tu semana partiendo del próximo jueves.</p>
+    </div>
+
+    <form action="/api/guardar-menu" method="POST" class="space-y-4">
+      {semanaNueva.map((dia) => (
+        <div class=" bg-neutral-primary-soft shadow-xs rounded-base border border-default overflow-hidden">
+          <div class="px-6 py-2 bg-neutral-secondary-medium border-b border-default flex justify-between items-center">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-body">
+              {dia.nombre} {dia.diaMes}
+            </span>
+            <span class="text-[10px] font-medium text-body opacity-60">
+              {dia.iso}
+            </span>
+          </div>
+          
+          <input type="hidden" name="fecha" value={dia.iso} />
+          
+          <div class="p-5 space-y-4">
+            <div class="grid grid-cols-3 items-center gap-4">
+              <label class="text-xs font-medium text-heading uppercase italic">Almuerzo</label>
+              <div class="col-span-2">
+                <select 
+                  name="comida_1" 
+                  class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2 shadow-xs"
+                >
+                  <option value="">-- Sin asignar --</option>
+                  {recetas?.map((r) => (
+                    <option value={r.platillo}>{r.platillo}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 items-center gap-4">
+              <label class="text-xs font-medium text-heading uppercase italic">Cena</label>
+              <div class="col-span-2">
+                <select 
+                  name="comida_2" 
+                  class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2 shadow-xs"
+                >
+                  <option value="">-- Sin asignar --</option>
+                  {recetas?.map((r) => (
+                    <option value={r.platillo}>{r.platillo}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+      
+      <div class=" pointer-events-none">
+        <button 
+          type="submit" 
+          class="mt-10 pointer-events-auto w-full text-white bg-brand hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-lg font-bold rounded-base text-sm px-6 py-4 transition-all active:scale-95 flex items-center justify-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+          </svg>
+          Guardar Menú Semanal
+        </button>
+      </div>
+    </form>
+  </div>
+</Layout> 

@@ -1,0 +1,152 @@
+---
+import Layout from "../layouts/layout.astro";
+
+
+import { supabase } from '../lib/supabase';
+
+const hoy = new Date();
+const hoyIso = hoy.toISOString().split('T')[0];
+
+const diasHastaMiercoles = (3 - hoy.getDay() + 7) % 7;
+const miercolesCierre = new Date(hoy);
+miercolesCierre.setDate(hoy.getDate() + diasHastaMiercoles);
+const miercolesIso = miercolesCierre.toISOString().split('T')[0];
+
+// 1. Obtener platillos del menú (Aquí permitimos duplicados)
+const { data: menuData } = await supabase
+  .from('menu_semana')
+  .select('comida_1, comida_2')
+  .gte('fecha', hoyIso)      
+  .lte('fecha', miercolesIso); 
+
+// ELIMINAMOS EL Set: ahora obtenemos la lista completa de nombres, aunque se repitan
+const nombresPlatillos = menuData?.flatMap(d => [d.comida_1, d.comida_2]).filter(Boolean) || [];
+
+
+
+// 2. Obtener ingredientes de esas recetas
+const { data: recetas } = await supabase
+  .from('recetas')
+  .select('platillo, ingredientes') // Traemos el nombre del platillo también
+  .in('platillo', nombresPlatillos);
+
+  
+
+// IMPORTANTE: Como 'recetas' de la DB solo trae una fila por cada platillo único, 
+// necesitamos "multiplicar" esas recetas según cuántas veces aparezcan en nuestro menú.
+const ingredientesTotalesBrutos = nombresPlatillos.flatMap(nombrePlatillo => {
+  const recetaEncontrada = recetas?.find(r => r.platillo === nombrePlatillo);
+  return recetaEncontrada ? recetaEncontrada.ingredientes : [];
+});
+console.log(ingredientesTotalesBrutos)
+
+// 3. Obtener detalles de la tabla ingredientes
+// (Aquí sí usamos Set solo para la consulta SQL, para no pedir 10 veces lo mismo a la DB)
+const listaNombresUnicos = [...new Set(ingredientesTotalesBrutos)];
+const { data: ingredientes } = await supabase
+  .from('ingredientes')
+  .select('*')
+  .in('nombre', listaNombresUnicos);
+
+
+  console.log(listaNombresUnicos)
+
+// 4. Procesamos con la lógica de 'es_porcionable'
+const listaProcesada = ingredientesTotalesBrutos.reduce((acc, nombre) => {
+  const detalle = ingredientes?.find(i => i.nombre === nombre);
+  if (!detalle) return acc;
+
+  if (!acc[nombre]) {
+    acc[nombre] = { 
+      ...detalle, 
+      cantidad: 1, 
+      precioTotal: detalle.precio || 0 
+    };
+  } else {
+    // Si es porcionable (ej: carne), sumamos cantidad y precio
+    if (detalle.es_porcionable) {
+      acc[nombre].cantidad += 1;
+      acc[nombre].precioTotal += detalle.precio || 0;
+    } 
+    // Si NO es porcionable (ej: sal/cebolla), se mantiene en cantidad 1
+  }
+  return acc;
+}, {});
+
+console.log(listaProcesada)
+
+const itemsFinales = Object.values(listaProcesada);
+
+console.log(itemsFinales)
+
+
+// 6. Agrupar por Tienda y Departamento
+const agrupado = itemsFinales.reduce((acc, ing) => {
+  const tienda = ing.tienda || 'Sin Tienda';
+  const depto = ing.departamento || 'General';
+  
+  if (!acc[tienda]) acc[tienda] = {};
+  if (!acc[tienda][depto]) acc[tienda][depto] = [];
+  
+  acc[tienda][depto].push(ing);
+  return acc;
+}, {});
+---
+
+<Layout>
+{agrupado && Object.entries(agrupado).map(([tienda, departamentos]) => (
+  <div class="mx-5">
+    <h2 class="text-4xl font-bold text-heading ml-1 mb-5">{tienda}</h2>
+    {Object.entries(departamentos).map(([depto, items]) => (
+      <ul class="w-full select-none text-sm font-medium text-heading bg-neutral-primary border border-default rounded-base mb-10">
+        <li class="w-full border-b border-default rounded-t-lg bg-neutral-primary-soft">
+          <div class="flex items-center ps-3">
+            <h3 class="w-full py-4 font-bold text-heading text-xl">{depto}</h3>
+          </div>
+        </li>
+        {items.map((ing) => (
+          <li class="w-full border-b border-default rounded-t-lg item-compra" data-nombre={ing.nombre}>
+            <div class="grid grid-cols-[2rem_auto_8rem] items-center ps-3 pe-3 justify-stretch" id="info">
+              <input id="vue-checkbox" type="checkbox" value="" class="check-item w-6 h-6 border border-default-medium rounded bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft" />
+              <label for="vue-checkbox" class=" py-4 pl-3 ms-2 font-medium text-heading text-lg">{ing.nombre}</label>
+              <div class="flex justify-between items-center info">
+                <p class="text-gray-400 text-sm ml-2">({ing.es_porcionable ? ing.precioTotal.toFixed(2) : ing.precio.toFixed(2)}€)</p>
+                {ing.cantidad > 1 && (<span class="text-orange-600 font-bold text-lg">x{ing.cantidad}</span>)}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    ))}
+    <hr class="h-px my-8 bg-neutral-quaternary border-2" />
+  </div>
+))}
+
+
+   
+    <script>
+  // Lógica para mover los seleccionados al final de su departamento
+  const checks = document.querySelectorAll('.check-item');
+
+  checks.forEach(check => {
+    check.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement;
+      const row = target.closest('.item-compra') as HTMLElement;
+      const parentList = row.parentElement;
+      const info = row.querySelector('.nombre-ingrediente') as HTMLElement;
+
+      if (target.checked) {
+        row.style.opacity = '0.4';
+        info.style.textDecoration = 'line-through';
+        // Mover al final del departamento actual
+        parentList?.appendChild(row);
+      } else {
+        row.style.opacity = '1';
+        info.style.textDecoration = 'none';
+        // Mover al inicio del departamento actual
+        parentList?.prepend(row);
+      }
+    });
+  });
+</script>
+</Layout>

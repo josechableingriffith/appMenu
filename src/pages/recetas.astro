@@ -1,0 +1,261 @@
+---
+import Layout from "../layouts/layout.astro";
+import { supabase } from '../lib/supabase';
+
+// Obtenemos las recetas
+const { data: recetas, error } = await supabase
+  .from('recetas')
+  .select('*')
+
+if (error) console.error("Error de Supabase:", error);
+console.log("Datos recibidos:", recetas);
+
+
+// Obtenemos los ingredientes existentes para el select
+const { data: ingredientesDB } = await supabase
+  .from('ingredientes')
+  .select('nombre')
+  .order('nombre', { ascending: true });
+
+const departamentos = ["Frutas y Verduras", "Carnes", "Lácteos", "Abarrotes", "Limpieza", "Congelados", "Panadería"];
+const tiendas = ["Lidl", "Tesco", "Aldi", "Dunnes", "Otra"];
+---
+
+<Layout title="Mis Recetas">
+
+<div class="flex flex-row-reverse gap-5 mx-8 justify-right mb-10">
+  <button data-modal-target="receta-modal" data-modal-toggle="receta-modal" class="text-white bg-brand hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium rounded-base text-sm px-5 py-2.5 transition-all" type="button">
+    + Agregar Receta
+  </button>  
+</div>
+
+<div class="space-y-4">
+  {recetas?.map((receta) => (
+    <div id={'accordion-card-'+receta.id} data-accordion="collapse" class="mx-5">
+      <h2 id={'accordion-card-heading-'+receta.id}>
+        <button type="button" class="flex items-center justify-between w-full p-5 font-medium text-body rounded-base shadow-xs border border-default gap-3 [&[aria-expanded='true']]:rounded-b-none" data-accordion-target={'#accordion-card-body-'+receta.id} aria-expanded="false">
+          <span class="text-lg font-bold text-heading">{receta.platillo}</span>
+          <svg data-accordion-icon class="w-5 h-5 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 15 7-7 7 7"/></svg>
+        </button>
+      </h2>
+      <div id={'accordion-card-body-'+receta.id} class="hidden border border-t-0 border-default rounded-b-base bg-white" aria-labelledby={'accordion-card-heading-'+receta.id}>
+        <div class="p-5">
+          <h3 class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Ingredientes:</h3>
+          <ul class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {receta.ingredientes?.map((ingrediente) => (
+              <li class="flex items-center text-body">
+                <svg class="w-4 h-4 text-brand me-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/></svg>
+                {ingrediente}
+              </li>
+            ))}
+          </ul>
+
+          {receta.nota && (
+            <div class="mt-6 p-3 bg-neutral-secondary-soft rounded-base border-l-4 border-brand">
+              <h3 class="text-xs font-bold uppercase text-gray-500 mb-1">Notas:</h3>
+              <p class="text-sm text-body italic">{receta.nota}</p>
+            </div>
+          )}
+
+          {receta.link && (
+            <div class="mt-4">
+              <a href={receta.link} target="_blank" class="inline-flex items-center text-sm font-medium text-fg-brand hover:underline">
+                {receta.link} 
+                <svg class="w-4 h-4 ms-2" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 14v4.833A1.166 1.166 0 0 1 16.833 20H5.167A1.167 1.167 0 0 1 4 18.833V7.167A1.166 1.166 0 0 1 5.167 6h4.618m4.447-2H20v5.768m-7.889 2.121 7.778-7.778"/></svg>
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+<div id="receta-modal" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 justify-center items-center w-full h-full bg-gray-900/50 backdrop-blur-sm">
+  <div class="relative p-4 w-full max-w-2xl max-h-full">
+      <div class="relative bg-neutral-primary-soft border border-default rounded-base shadow-lg overflow-hidden">
+          <div class="flex items-center justify-between border-b border-default p-4 md:p-5">
+              <h3 class="text-lg font-medium text-heading">Añadir nueva receta</h3>
+              <button type="button" class="text-body hover:bg-neutral-tertiary rounded-base text-sm w-8 h-8 inline-flex justify-center items-center" data-modal-hide="receta-modal">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/></svg>
+              </button>
+          </div>
+
+          <form action="/api/guardar-receta" method="post" class="p-6">
+              <div class="grid gap-6 grid-cols-2">
+                  <div class="col-span-2">
+                      <label for="platillo" class="block mb-2 text-sm font-medium text-heading">Nombre de la receta</label>
+                      <input type="text" id="platillo" name="platillo" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full p-2.5" placeholder="Ej: Pasta Carbonara" required>
+                  </div>
+
+                  <div class="col-span-2 md:col-span-1">      
+                    <label class="block mb-2 text-sm font-medium text-heading">Ingredientes añadidos:</label>
+                    <div class="min-h-[100px] p-3 border-2 border-dashed border-default-medium rounded-base bg-white/50">
+                        <ul id="lista-visual" class="space-y-2"></ul>
+                    </div>
+                  </div>
+
+                  <div class="col-span-2 md:col-span-1">
+                      <label for="select-existente" class="block mb-2 text-sm font-medium text-heading">Elegir del catálogo:</label>
+                      <select id="select-existente" class="block w-full p-2.5 bg-neutral-secondary-medium border border-default-medium rounded-base mb-3">
+                          <option value="" selected>Selecciona un ingrediente...</option>
+                          {ingredientesDB?.map(i => <option value={i.nombre}>{i.nombre}</option>)}
+                      </select>
+                      <div class="text-right">
+                        <button type="button" id="add-existente" disabled class="text-fg-disabled bg-disabled border border-default-medium font-medium rounded-base text-xs px-4 py-2 transition-all">
+                            Añadir
+                        </button>
+                      </div>
+
+                      <div id="accordion-nested" data-accordion="collapse" class="mt-4">
+                        <h2 id="accordion-nested-heading">
+                          <button type="button" class="flex items-center justify-between w-full p-3 text-xs font-medium border border-default rounded-base hover:bg-neutral-secondary-medium" data-accordion-target="#accordion-nested-body" aria-expanded="false">
+                            <span>¿No está? Créalo aquí</span>
+                            <svg data-accordion-icon class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="m5 15 7-7 7 7"/></svg>
+                          </button>
+                        </h2>
+                        <div id="accordion-nested-body" class="hidden p-3 border border-t-0 border-default rounded-b-base bg-neutral-secondary-soft">
+                          <div class="space-y-3">
+                            <input type="text" id="n-nombre" class="w-full text-xs p-2 rounded border-default" placeholder="Nombre">
+                            <input type="number" id="n-precio" class="w-full text-xs p-2 rounded border-default" placeholder="Precio ($)" step="0.01">
+                            <select id="n-depto" class="w-full text-xs p-2 rounded border-default">
+                                {departamentos.map(d => <option value={d}>{d}</option>)}
+                            </select>
+                            <select id="n-tienda" class="w-full text-xs p-2 rounded border-default">
+                                {tiendas.map(t => <option value={t}>{t}</option>)}
+                            </select>
+                            <label class="flex items-center text-[10px] gap-2">
+                                <input type="checkbox" id="n-porcionable" class="rounded"> ¿Es uno por comida?
+                            </label>
+                            <button type="button" id="add-nuevo" class="w-full bg-brand text-white text-xs py-2 rounded-base">Registrar y Añadir</button>
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+
+                  <div class="col-span-2 md:col-span-1">
+                    <label class="block mb-2 text-sm font-medium text-heading">Link (YouTube/Web)</label>
+                    <input type="url" name="link" class="bg-neutral-secondary-medium border border-default-medium rounded-base w-full p-2.5 text-sm" placeholder="https://...">
+                  </div>
+                  <div class="col-span-2 md:col-span-1">
+                    <label class="block mb-2 text-sm font-medium text-heading">Nota adicional</label>
+                    <textarea name="nota" rows="2" class="bg-neutral-secondary-medium border border-default-medium rounded-base w-full p-2.5 text-sm" placeholder="Opcional..."></textarea>
+                  </div>
+              </div>
+
+              <div class="mt-8 border-t border-default pt-5 text-right">
+                  <button type="submit" class="bg-brand text-white font-bold py-3 px-8 rounded-base hover:bg-brand-strong transition-colors">
+                      Guardar Receta Final
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
+</div>
+
+<div id="toast-success" class="z-[60] fixed bottom-20 right-5 flex items-center w-full max-w-xs p-4 text-gray-500 bg-white rounded-lg shadow-xl hidden transition-opacity duration-300" role="alert">
+    <div class="inline-flex items-center justify-center shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11.917 9.724 16.5 19 7.5"/></svg>
+    </div>
+    <div id="toast-message" class="ms-3 text-sm font-normal">Mensaje aquí</div>
+</div>
+
+<script>
+  import { initFlowbite } from 'flowbite';
+
+  function setupRecipeLogic() {
+    const select = document.getElementById('select-existente') as HTMLSelectElement;
+    const btnAddExistente = document.getElementById('add-existente') as HTMLButtonElement;
+    const listaVisual = document.getElementById('lista-visual');
+
+    // Estilos de botones
+    const activeClasses = ["text-white", "bg-brand", "hover:bg-brand-strong", "border-transparent"];
+    const disabledClasses = ["text-fg-disabled", "bg-disabled", "border-default-medium"];
+
+    // 1. Validar Select para activar botón
+    select?.addEventListener('change', () => {
+        if (select.value !== "") {
+            btnAddExistente.disabled = false;
+            btnAddExistente.classList.remove(...disabledClasses);
+            btnAddExistente.classList.add(...activeClasses);
+        } else {
+            btnAddExistente.disabled = true;
+            btnAddExistente.classList.remove(...activeClasses);
+            btnAddExistente.classList.add(...disabledClasses);
+        }
+    });
+
+    // 2. Función para agregar ingrediente (Crea LI e Inputs ocultos dentro)
+    function agregarIngrediente(nombre: string, esNuevo: boolean, data = {}) {
+        const li = document.createElement('li');
+        li.className = "flex items-center justify-between p-2 bg-white border border-default rounded-base group";
+        
+        li.innerHTML = `
+            <div class="flex items-center gap-2">
+                <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/></svg>
+                <span class="text-xs font-medium text-heading">${nombre} ${esNuevo ? '<span class="text-[9px] text-brand uppercase font-bold">(Nuevo)</span>' : ''}</span>
+                
+                <input type="hidden" name="ingredientes_finales" value="${nombre}">
+                ${esNuevo ? `<input type="hidden" name="nuevos_ingredientes_data" value='${JSON.stringify(data)}'>` : ''}
+            </div>
+            <button type="button" class="text-gray-300 hover:text-red-500 transition-colors remove-btn">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/></svg>
+            </button>
+        `;
+
+        li.querySelector('.remove-btn')?.addEventListener('click', () => li.remove());
+        listaVisual?.appendChild(li);
+    }
+
+    // 3. Botón Existente
+    btnAddExistente?.addEventListener('click', () => {
+        if (select.value) {
+            agregarIngrediente(select.value, false);
+            select.value = "";
+            btnAddExistente.disabled = true;
+            btnAddExistente.classList.replace('bg-brand', 'bg-disabled');
+        }
+    });
+
+    // 4. Botón Nuevo
+    document.getElementById('add-nuevo')?.addEventListener('click', () => {
+        const nom = document.getElementById('n-nombre') as HTMLInputElement;
+        const pre = document.getElementById('n-precio') as HTMLInputElement;
+        const dep = document.getElementById('n-depto') as HTMLSelectElement;
+        const tie = document.getElementById('n-tienda') as HTMLSelectElement;
+        const por = document.getElementById('n-porcionable') as HTMLInputElement;
+
+        if (nom.value) {
+            const data = {
+                nombre: nom.value,
+                precio: parseFloat(pre.value) || 0,
+                departamento: dep.value,
+                tienda: tie.value,
+                es_porcionable: por.checked
+            };
+            agregarIngrediente(nom.value, true, data);
+            
+            // Limpiar y cerrar acordeón
+            nom.value = ""; pre.value = "";
+            const accBtn = document.querySelector('[data-accordion-target="#accordion-nested-body"]') as HTMLElement;
+            accBtn?.click();
+
+            // Toast feedback
+            const toast = document.getElementById('toast-success');
+            if (toast) {
+                document.getElementById('toast-message')!.textContent = "Añadido a la lista";
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 2000);
+            }
+        }
+    });
+  }
+
+  // Ejecución
+  document.addEventListener('astro:page-load', () => {
+    initFlowbite();
+    setupRecipeLogic();
+  });
+</script>
+
+</Layout>
