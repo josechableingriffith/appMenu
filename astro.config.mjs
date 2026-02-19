@@ -3,9 +3,11 @@ import tailwind from '@astrojs/tailwind';
 import vercel from '@astrojs/vercel/serverless';
 import AstroPWA from '@vite-pwa/astro';
 
+import netlify from '@astrojs/netlify';
+
 export default defineConfig({
   output: 'server',
-  adapter: vercel(),
+  adapter: netlify(),
   integrations: [
     tailwind(),
     AstroPWA({
