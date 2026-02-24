@@ -21,12 +21,10 @@ const tiendas = ["Lidl", "Tesco", "Aldi", "Dunnes", "Otra"];
 ---
 
 <Layout title="Lista de ingredientes">
-
-<div class="flex flex-row-reverse gap-5 mx-8 justify-right mt-5">
-  <button data-modal-target="crud-modal" data-modal-toggle="crud-modal" class="text-white bg-brand hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium rounded-base text-sm px-5 py-3 focus:outline-none" type="button">
-    Agregar nuevo ingrediente
-  </button>  
-</div>
+  <div class="mx-5">
+    <h1 class="mb-4 text-4xl font-bold tracking-tight text-heading md:text-5xl lg:text-6xl">Lista de ingredientes</h1>
+    <p class="mb-6 text-lg font-normal text-body lg:text-xl sm:px-16 xl:px-48">Esto es para que pongamos una descripción a nuestra app mi amor.</p>
+  </div>
 
 {ingredientesAgrupados && Object.keys(ingredientesAgrupados).map((tienda) => (
   <div class="mb-10">
@@ -142,6 +140,12 @@ const tiendas = ["Lidl", "Tesco", "Aldi", "Dunnes", "Otra"];
                             {tiendas.map(t => <option value={t}>{t}</option>)}
                         </select>
                     </div>
+                    <div class="col-span-2">
+                        <div class="flex items-center ps-4 border border-default rounded-base">
+                            <input type="checkbox" name="es_porcionable" id="es_porcionable" value="true" class="w-4 h-4 text-brand bg-gray-100 border-gray-300 rounded">
+                            <label for="es_porcionable" class="w-full py-4 ms-2 text-sm font-medium text-body">¿Es uno por comida?</label>
+                        </div>
+                    </div>
                 </div>
                 <button type="submit" class="w-full mt-6 text-white bg-brand hover:bg-brand-strong py-2.5 rounded-base font-medium">
                     Guardar Ingrediente
@@ -157,6 +161,16 @@ const tiendas = ["Lidl", "Tesco", "Aldi", "Dunnes", "Otra"];
     </div>
     <div id="toast-message" class="ms-3 text-sm font-normal">Acción completada.</div>
 </div>
+
+
+<div class="fixed right-5 bottom-[10dvh]">
+  <button data-modal-target="crud-modal" data-modal-toggle="crud-modal" class="text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xl font-medium rounded-base text-base px-5 py-3 focus:outline-none flex" type="button">
+    <span class="mr-3">Nuevo ingrediente</span>
+    <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7 7V5"/></svg>
+  </button>  
+</div>
+
+
 
 <script>
   // Manejo de Toasts y Limpieza de URL

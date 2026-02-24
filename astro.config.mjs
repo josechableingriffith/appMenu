@@ -13,10 +13,10 @@ export default defineConfig({
     AstroPWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Mis Recetas y Menú',
-        short_name: 'RecetasApp',
-        description: 'Gestor de cocina e ingredientes',
-        theme_color: '#4F46E5', // Tu color Brand
+        name: 'Eazy Peazy - Creando nuestro menú',
+        short_name: 'EazyPeazy',
+        description: 'Gestor de nuestro menú semanal e ingredientes',
+        theme_color: '##057A55', // Tu color Brand
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
@@ -24,7 +24,8 @@ export default defineConfig({
           {
             src: '/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: '/icon-512x512.png',

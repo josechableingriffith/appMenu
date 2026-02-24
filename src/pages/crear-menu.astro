@@ -28,12 +28,11 @@ for (let i = 0; i < 7; i++) {
 ---
 
 <Layout title="Planificar Menú">
-  <div class="mx-5 pb-15">
-    <div class="mb-8">
-      <h2 class="text-3xl font-bold tracking-tight text-heading md:text-4xl mt-5">Plan de Comidas</h2>
-      <p class="text-body text-sm mt-1">Organiza tu semana partiendo del próximo jueves.</p>
-    </div>
-
+  <div class="mx-5">
+    <h1 class="mb-4 text-4xl font-bold tracking-tight text-heading md:text-5xl lg:text-6xl">Crea el menú de la semana</h1>
+    <p class="mb-6 text-lg font-normal text-body lg:text-xl sm:px-16 xl:px-48">Esto es para que pongamos una descripción a nuestra app mi amor.</p>
+  </div>
+  <div class="mx-5">
     <form action="/api/guardar-menu" method="POST" class="space-y-4">
       {semanaNueva.map((dia) => (
         <div class=" bg-neutral-primary-soft shadow-xs rounded-base border border-default overflow-hidden">

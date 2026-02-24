@@ -9,24 +9,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Colores para el fondo y bordes
         neutral: {
-          'primary-soft': '#F9FAF9', // Un gris casi blanco
-          'secondary-medium': '#F3F4F6', // Gris para hover
+          'primary-soft': '#F9FAF9',
+          'secondary-medium': '#F3F4F6',
         },
-        // Colores de marca (Azul Flowbite por defecto)
         brand: {
-          DEFAULT: '#1A56DB', // bg-brand
-          strong: '#1E429F',  // hover:bg-brand-strong
-          medium: '#3F83F8',  // focus:ring-brand-medium
+          DEFAULT: '#823eba', // Tu nuevo color base
+          strong: '#6a3298',  // Un 15% más oscuro para el hover
+          medium: '#a06bd4',  // Un 20% más claro para focus:ring
+          soft: '#f3e8ff',    // Un lavanda muy suave para fondos ligeros
         },
-        // Colores de texto
-        body: '#6B7280',     // text-body (gris medio)
-        dark: '#1F2937',     // bg-dark (para tooltips)
-        
-        // Colores de estado o acento
+        body: '#6B7280',
+        dark: '#1F2937',
         fg: {
-          brand: '#1A56DB',   // text-fg-brand
+          brand: '#823eba',   // Texto con el nuevo color de marca
         }
       },
       // Si usas clases como rounded-base o shadow-xs, también hay que definirlas

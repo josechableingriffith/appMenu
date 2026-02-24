@@ -1,7 +1,6 @@
 ---
 import Layout from "../layouts/layout.astro";
 
-
 import { supabase } from '../lib/supabase';
 
 const hoy = new Date();
@@ -94,6 +93,10 @@ const agrupado = itemsFinales.reduce((acc, ing) => {
 ---
 
 <Layout>
+<div class="mx-5">
+	<h1 class="mb-4 text-4xl font-bold tracking-tight text-heading md:text-5xl lg:text-6xl">Lista del super</h1>
+	<p class="mb-6 text-lg font-normal text-body lg:text-xl sm:px-16 xl:px-48">Esto es para que pongamos una descripción a nuestra app mi amor.</p>
+</div>
 {agrupado && Object.entries(agrupado).map(([tienda, departamentos]) => (
   <div class="mx-5">
     <h2 class="text-4xl font-bold text-heading ml-1 mb-5">{tienda}</h2>
