@@ -4,6 +4,9 @@ import BottomHome from "../components/bottom-menu.astro"
 const { title } = Astro.props;
 import { ClientRouter } from 'astro:transitions';
 import { pwaInfo } from 'virtual:pwa-info';
+
+// CORRECCIÓN 1: Importar el CSS de forma relativa correctamente
+import '../styles/global.css'; 
 ---
 
 <!DOCTYPE html>
@@ -11,8 +14,8 @@ import { pwaInfo } from 'virtual:pwa-info';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../../styles/global.css">
-    <link rel="icon" type="image/x-icon" href=" /favicon.png">
+    
+    <link rel="icon" type="image/x-icon" href="/favicon.png">
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <meta name="apple-mobile-web-app-title" content="EazyPeazy">
     <meta name="mobile-web-app-capable" content="yes">
@@ -26,35 +29,26 @@ import { pwaInfo } from 'virtual:pwa-info';
         <slot></slot>
     </main>
     <BottomHome />
-    <script src="../../node_modules/flowbite/dist/flowbite.min.js"></script>
+
     <script>
+        // Astro procesará este import y lo incluirá en el paquete final
         import { initFlowbite } from 'flowbite';
 
-        // Este evento se dispara al cargar la página por primera vez 
-        // Y también después de cada navegación entre páginas
         document.addEventListener('astro:page-load', () => {
             initFlowbite();
-            
         });
 
-  import { registerSW } from 'virtual:pwa-register';
+        import { registerSW } from 'virtual:pwa-register';
 
-  // Esto registra el service worker automáticamente
-  registerSW({
-    immediate: true,
-    onRegisteredSW(swScriptUrl) {
-      console.log('SW registrado:', swScriptUrl);
-    },
-    onOfflineReady() {
-      console.log('La app está lista para trabajar offline');
-    },
-  });
-
-  document.addEventListener('astro:page-load', () => {
-    initFlowbite();
-    setupRecipeLogic(); // Tu función de lógica
-  });
-</script>
-
+        registerSW({
+            immediate: true,
+            onRegisteredSW(swScriptUrl) {
+                console.log('SW registrado:', swScriptUrl);
+            },
+            onOfflineReady() {
+                console.log('La app está lista para trabajar offline');
+            },
+        });
+    </script>
 </body>
 </html>
