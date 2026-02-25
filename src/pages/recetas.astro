@@ -49,8 +49,8 @@ const tiendas = ["Lidl", "Tesco", "Aldi", "Dunnes", "Otra"];
     <div class="space-y-5">
         {recetasAgrupadas[letra].map((receta) => (
         <div id={'accordion-card-'+receta.id} data-accordion="collapse" class="mx-5">
-          <h2 id={'accordion-card-heading-'+receta.id}>
-            <button type="button" class="flex items-center justify-between w-full p-5 font-medium text-body rounded-base shadow-xs border border-default gap-3 [&[aria-expanded='true']]:rounded-b-none" data-accordion-target={'#accordion-card-body-'+receta.id} aria-expanded="false">
+          <h2 >
+            <button type="button" id={'accordion-card-heading-'+receta.id} class="flex items-center justify-between w-full p-5 font-medium text-body rounded-base shadow-xs border border-default gap-3 [&[aria-expanded='true']]:rounded-b-none" data-accordion-target={'#accordion-card-body-'+receta.id} aria-expanded="false">
               <span class="text-lg font-bold text-heading">{receta.platillo}</span>
               <svg data-accordion-icon class="w-5 h-5 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 15 7-7 7 7"/></svg>
             </button>
@@ -412,6 +412,17 @@ const tiendas = ["Lidl", "Tesco", "Aldi", "Dunnes", "Otra"];
         }
     });
   }
+
+document.addEventListener('astro:page-load', () => {
+  const hash = window.location.hash;
+  if (hash) {
+    const target = document.querySelector(hash);
+    if (target) {
+      // Simulamos un click en el botón del acordeón para que Flowbite lo abra
+      setTimeout(() => target.click(), 500); 
+    }
+  }
+});
 
   document.addEventListener('astro:page-load', () => {
     initFlowbite();

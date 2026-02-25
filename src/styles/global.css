@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "flowbite/src/themes/default";
+@import url('https://fonts.googleapis.com/css2?family=Chewy&display=swap');
 
 /* input.css file */
 /*@import "tailwindcss";*/
@@ -29,4 +30,10 @@ body {
   overflow-x: hidden;
   overscroll-behavior-y: none;
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.chewy {
+  font-family: "Chewy", system-ui;
+  color: #823eba;
+  font-size: x-large !important;
 }

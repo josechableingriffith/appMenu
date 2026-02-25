@@ -1,155 +1,270 @@
 ---
 import Layout from "../layouts/layout.astro";
-
 import { supabase } from '../lib/supabase';
 
+// 1. Configuración de fechas
 const hoy = new Date();
 const hoyIso = hoy.toISOString().split('T')[0];
-
 const diasHastaMiercoles = (3 - hoy.getDay() + 7) % 7;
 const miercolesCierre = new Date(hoy);
 miercolesCierre.setDate(hoy.getDate() + diasHastaMiercoles);
 const miercolesIso = miercolesCierre.toISOString().split('T')[0];
 
-// 1. Obtener platillos del menú (Aquí permitimos duplicados)
+// 2. Obtener platillos del menú
 const { data: menuData } = await supabase
   .from('menu_semana')
   .select('comida_1, comida_2')
   .gte('fecha', hoyIso)      
   .lte('fecha', miercolesIso); 
 
-// ELIMINAMOS EL Set: ahora obtenemos la lista completa de nombres, aunque se repitan
 const nombresPlatillos = menuData?.flatMap(d => [d.comida_1, d.comida_2]).filter(Boolean) || [];
 
-
-
-// 2. Obtener ingredientes de esas recetas
+// 3. Obtener ingredientes de recetas
 const { data: recetas } = await supabase
   .from('recetas')
-  .select('platillo, ingredientes') // Traemos el nombre del platillo también
+  .select('platillo, ingredientes')
   .in('platillo', nombresPlatillos);
 
-  
-
-// IMPORTANTE: Como 'recetas' de la DB solo trae una fila por cada platillo único, 
-// necesitamos "multiplicar" esas recetas según cuántas veces aparezcan en nuestro menú.
 const ingredientesTotalesBrutos = nombresPlatillos.flatMap(nombrePlatillo => {
   const recetaEncontrada = recetas?.find(r => r.platillo === nombrePlatillo);
   return recetaEncontrada ? recetaEncontrada.ingredientes : [];
 });
-console.log(ingredientesTotalesBrutos)
 
-// 3. Obtener detalles de la tabla ingredientes
-// (Aquí sí usamos Set solo para la consulta SQL, para no pedir 10 veces lo mismo a la DB)
-const listaNombresUnicos = [...new Set(ingredientesTotalesBrutos)];
-const { data: ingredientes } = await supabase
+// 4. Obtener TODO el catálogo (Para cruzar datos de Extras y para el Selector)
+const { data: catalogoCompleto } = await supabase
   .from('ingredientes')
   .select('*')
-  .in('nombre', listaNombresUnicos);
+  .order('nombre', { ascending: true });
 
-
-  console.log(listaNombresUnicos)
-
-// 4. Procesamos con la lógica de 'es_porcionable'
+// 5. Procesar ingredientes de recetas
 const listaProcesada = ingredientesTotalesBrutos.reduce((acc, nombre) => {
-  const detalle = ingredientes?.find(i => i.nombre === nombre);
+  const detalle = catalogoCompleto?.find(i => i.nombre === nombre);
   if (!detalle) return acc;
 
   if (!acc[nombre]) {
-    acc[nombre] = { 
-      ...detalle, 
-      cantidad: 1, 
-      precioTotal: detalle.precio || 0 
-    };
+    acc[nombre] = { ...detalle, cantidad: 1, precioTotal: detalle.precio || 0, esExtra: false };
   } else {
-    // Si es porcionable (ej: carne), sumamos cantidad y precio
     if (detalle.es_porcionable) {
       acc[nombre].cantidad += 1;
       acc[nombre].precioTotal += detalle.precio || 0;
     } 
-    // Si NO es porcionable (ej: sal/cebolla), se mantiene en cantidad 1
   }
   return acc;
 }, {});
 
-console.log(listaProcesada)
-
-const itemsFinales = Object.values(listaProcesada);
-
-console.log(itemsFinales)
-
-
-// 6. Agrupar por Tienda y Departamento
-const agrupado = itemsFinales.reduce((acc, ing) => {
-  const tienda = ing.tienda || 'Sin Tienda';
-  const depto = ing.departamento || 'General';
-  
-  if (!acc[tienda]) acc[tienda] = {};
-  if (!acc[tienda][depto]) acc[tienda][depto] = [];
-  
-  acc[tienda][depto].push(ing);
-  return acc;
-}, {});
+// 6. TOTAL BASE (Solo recetas) para el JS
+const totalRecetas = Object.values(listaProcesada).reduce((sum, ing) => sum + (ing.es_porcionable ? ing.precioTotal : ing.precio), 0);
 ---
 
-<Layout>
+<Layout title="Lista de Compras">
 <div class="mx-5">
 	<h1 class="mb-4 text-4xl font-bold tracking-tight text-heading md:text-5xl lg:text-6xl">Lista del super</h1>
 	<p class="mb-6 text-lg font-normal text-body lg:text-xl sm:px-16 xl:px-48">Esto es para que pongamos una descripción a nuestra app mi amor.</p>
 </div>
-{agrupado && Object.entries(agrupado).map(([tienda, departamentos]) => (
-  <div class="mx-5">
-    <h2 class="text-4xl font-bold text-heading ml-1 mb-5">{tienda}</h2>
-    {Object.entries(departamentos).map(([depto, items]) => (
-      <ul class="w-full select-none text-sm font-medium text-heading bg-neutral-primary border border-default rounded-base mb-10">
-        <li class="w-full border-b border-default rounded-t-lg bg-neutral-primary-soft">
-          <div class="flex items-center ps-3">
-            <h3 class="w-full py-4 font-bold text-heading text-xl">{depto}</h3>
-          </div>
-        </li>
-        {items.map((ing) => (
-          <li class="w-full border-b border-default rounded-t-lg item-compra" data-nombre={ing.nombre}>
-            <div class="grid grid-cols-[2rem_auto_8rem] items-center ps-3 pe-3 justify-stretch" id="info">
-              <input id="vue-checkbox" type="checkbox" value="" class="check-item w-6 h-6 border border-default-medium rounded bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft" />
-              <label for="vue-checkbox" class=" py-4 pl-3 ms-2 font-medium text-heading text-lg">{ing.nombre}</label>
-              <div class="flex justify-between items-center info">
-                <p class="text-gray-400 text-sm ml-2">({ing.es_porcionable ? ing.precioTotal.toFixed(2) : ing.precio.toFixed(2)}€)</p>
-                {ing.cantidad > 1 && (<span class="text-orange-600 font-bold text-lg">x{ing.cantidad}</span>)}
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-    ))}
-    <hr class="h-px my-8 bg-neutral-quaternary border-2" />
+
+<div class="sticky top-[11dvh] mx-5 my-10 z-30">
+    <div class="bg-brand text-white p-5 rounded-base shadow-lg flex justify-between items-center mt-4 border border-brand-strong">
+      <div>
+        <p class="text-xs uppercase font-bold opacity-80">Total Estimado</p>
+        <p class="text-3xl font-black" id="gran-total" data-base={totalRecetas}>
+          {totalRecetas.toFixed(2)}€
+        </p>
+      </div>
+      <button data-modal-target="extra-modal" data-modal-toggle="extra-modal" class="bg-white text-brand p-3 rounded-full hover:scale-110 transition-transform shadow-md">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4"/></svg>
+      </button>
+    </div>
   </div>
-))}
 
+  <div id="contenedor-tiendas" class="space-y-10">
+    </div>
 
-   
-    <script>
-  // Lógica para mover los seleccionados al final de su departamento
-  const checks = document.querySelectorAll('.check-item');
+  <div id="extra-modal" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 justify-center items-center w-full h-full bg-gray-900/50 backdrop-blur-sm">
+    <div class="relative p-5 w-full max-w-md">
+      <div class="relative bg-white rounded-base shadow-xl p-6 border border-default">
+        <div class="flex items-center justify-between ">
+          <h3 class="text-xl font-bold text-heading mb-4">Añadir extra</h3>
+          <button type="button" class="text-body hover:bg-neutral-tertiary rounded-base text-sm w-8 h-8 inline-flex justify-center items-center" data-modal-hide="extra-modal">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/></svg>
+          </button>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <label class="block mb-1 text-xs font-bold text-gray-400 uppercase">Del catálogo</label>
+            <select id="extra-select-catalogo" class="w-full p-2.5 bg-neutral-secondary-medium border border-default rounded-base text-sm">
+              <option value="" data-precio="0" data-tienda="Otra" data-depto="General">-- Selecciona --</option>
+              {catalogoCompleto?.map(i => (
+                <option value={i.nombre} data-precio={i.precio} data-tienda={i.tienda} data-depto={i.departamento}>{i.nombre} ({i.precio}€)</option>
+              ))}
+            </select>
+          </div>
+          <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-2 text-gray-300">O manual</span></div>
+          <input type="text" id="extra-nombre" placeholder="Nombre" class="w-full p-2.5 bg-neutral-secondary-medium border border-default rounded-base">
+          <input type="number" id="extra-precio" placeholder="Precio (€)" step="0.01" class="w-full p-2.5 bg-neutral-secondary-medium border border-default rounded-base">
+          <button id="btn-guardar-extra" class="w-full bg-brand text-white font-bold py-3 rounded-base hover:bg-brand-strong">Añadir a la lista</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  checks.forEach(check => {
-    check.addEventListener('change', (e) => {
-      const target = e.target as HTMLInputElement;
-      const row = target.closest('.item-compra') as HTMLElement;
-      const parentList = row.parentElement;
-      const info = row.querySelector('.nombre-ingrediente') as HTMLElement;
+  <script define:vars={{ listaProcesada, totalRecetas }}>
+    function renderApp() {
+    const contenedor = document.getElementById('contenedor-tiendas');
+    const granTotalElem = document.getElementById('gran-total');
+    const extras = JSON.parse(localStorage.getItem('compras_extras') || '[]');
+    
+    // SOLUCIÓN: Usar structuredClone para que la copia no mantenga 
+    // referencias a los cálculos anteriores
+    let listaFinal = structuredClone(listaProcesada);
 
-      if (target.checked) {
-        row.style.opacity = '0.4';
-        info.style.textDecoration = 'line-through';
-        // Mover al final del departamento actual
-        parentList?.appendChild(row);
+    extras.forEach(extra => {
+        if (listaFinal[extra.nombre]) {
+          listaFinal[extra.nombre].cantidad += 1;
+          const precioIndividual = listaFinal[extra.nombre].precio || 0;
+          listaFinal[extra.nombre].precioTotal = (listaFinal[extra.nombre].cantidad * precioIndividual);
+          listaFinal[extra.nombre].esExtra = true; 
+        } else {
+          listaFinal[extra.nombre] = {
+            nombre: extra.nombre,
+            precio: extra.precio,
+            precioTotal: extra.precio,
+            cantidad: 1,
+            tienda: extra.tienda || 'Otra',
+            departamento: extra.departamento || 'General',
+            esExtra: true
+          };
+        }
+      });
+
+      // 2. Agrupar por Tienda y Departamento
+      const agrupado = Object.values(listaFinal).reduce((acc, ing) => {
+        const tienda = ing.tienda || 'Otra';
+        const depto = ing.departamento || 'General';
+        if (!acc[tienda]) acc[tienda] = {};
+        if (!acc[tienda][depto]) acc[tienda][depto] = [];
+        acc[tienda][depto].push(ing);
+        return acc;
+      }, {});
+
+      // 3. Generar HTML
+      let html = '';
+      let sumaTotal = 0;
+
+      Object.entries(agrupado).forEach(([tienda, deptos]) => {
+        html += `
+          <div class="mx-5">
+            <h2 class="text-3xl font-bold text-heading mb-5 border-l-4 border-[#823eba] pl-3">${tienda}</h2>
+            ${Object.entries(deptos).map(([depto, items]) => `
+              <ul class="w-full text-sm font-medium text-heading bg-white border border-default rounded-base mb-6 shadow-sm overflow-hidden">
+                <li class="w-full border-b border-default bg-[#F9FAF9] p-4">
+                  <h3 class="font-bold text-heading text-lg">${depto}</h3>
+                </li>
+                ${items.map(ing => {
+                  sumaTotal += (ing.es_porcionable ? ing.precioTotal : ing.precio * ing.cantidad);
+                  return `
+                    <li class="w-full border-b border-default item-compra">
+                      <div class="grid grid-cols-[3rem_auto_6rem] items-center p-4">
+                        <input type="checkbox" class="check-item w-6 h-6 border-default-medium rounded text-[#823eba] focus:ring-[#a06bd4]" />
+                        <label class="text-lg font-medium text-heading pl-2 flex items-center justify-between gap-2">
+                          <span class="flex items-center gap-2">
+                            ${ing.nombre}
+                            ${ing.esExtra ? '<span class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded font-bold">EXTRA</span>' : ''}
+                          </span>
+                          ${ing.esExtra ? `
+                            <button class="btn-eliminar-extra text-red-400 hover:text-red-600 pr-2" data-nombre="${ing.nombre}">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          ` : ''}
+                        </label>
+                        <div class="text-right">
+                          <p class="text-gray-400 text-sm">${(ing.precioTotal || ing.precio).toFixed(2)}€</p>
+                          ${ing.cantidad > 1 ? `<span class="text-[#823eba] font-bold">x${ing.cantidad}</span>` : ''}
+                        </div>
+                      </div>
+                    </li>
+                  `;
+                }).join('')}
+              </ul>
+            `).join('')}
+          </div>
+        `;
+      });
+
+      contenedor.innerHTML = html;
+      granTotalElem.textContent = sumaTotal.toFixed(2) + '€';
+
+      // Re-vincular eventos de checkbox
+      document.querySelectorAll('.check-item').forEach(check => {
+        check.addEventListener('change', (e) => {
+          const row = e.target.closest('.item-compra');
+          const label = row.querySelector('label');
+          if (e.target.checked) {
+            row.style.opacity = '0.3';
+            label.style.textDecoration = 'line-through';
+            row.parentElement.appendChild(row);
+          } else {
+            row.style.opacity = '1';
+            label.style.textDecoration = 'none';
+            row.parentElement.prepend(row);
+          }
+        });
+      });
+      // Lógica para eliminar extras individualmente
+      document.querySelectorAll('.btn-eliminar-extra').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const nombre = e.currentTarget.dataset.nombre;
+            let extras = JSON.parse(localStorage.getItem('compras_extras') || '[]');
+            // Eliminar solo una instancia (por si el usuario agregó el mismo extra varias veces)
+            const index = extras.findIndex(ex => ex.nombre === nombre);
+            if (index > -1) {
+                extras.splice(index, 1);
+                localStorage.setItem('compras_extras', JSON.stringify(extras));
+                renderApp();
+            }
+        });
+      });
+    
+    }
+    
+    // --- LÓGICA DEL MODAL ---
+    const selectCat = document.getElementById('extra-select-catalogo');
+    const inputNom = document.getElementById('extra-nombre');
+    const inputPre = document.getElementById('extra-precio');
+
+    selectCat?.addEventListener('change', () => {
+      const opt = selectCat.options[selectCat.selectedIndex];
+      if (selectCat.value) {
+        inputNom.value = selectCat.value;
+        inputPre.value = opt.dataset.precio;
+        inputNom.disabled = true;
       } else {
-        row.style.opacity = '1';
-        info.style.textDecoration = 'none';
-        // Mover al inicio del departamento actual
-        parentList?.prepend(row);
+        inputNom.value = ""; inputPre.value = ""; inputNom.disabled = false;
       }
     });
-  });
-</script>
+
+    document.getElementById('btn-guardar-extra')?.addEventListener('click', () => {
+      const opt = selectCat.options[selectCat.selectedIndex];
+      const extra = {
+        nombre: inputNom.value,
+        precio: parseFloat(inputPre.value) || 0,
+        tienda: selectCat.value ? opt.dataset.tienda : 'Otra',
+        departamento: selectCat.value ? opt.dataset.depto : 'General'
+      };
+
+      if (extra.nombre) {
+        const extras = JSON.parse(localStorage.getItem('compras_extras') || '[]');
+        extras.push(extra);
+        localStorage.setItem('compras_extras', JSON.stringify(extras));
+        inputNom.value = ''; inputPre.value = ''; selectCat.value = '';
+        renderApp();
+        document.querySelector('[data-modal-hide="extra-modal"]').click();
+      }
+    });
+
+    // Iniciar
+    document.addEventListener('astro:page-load', () => {
+        import('flowbite').then(mod => mod.initFlowbite());
+        renderApp();
+    });
+  </script>
 </Layout>

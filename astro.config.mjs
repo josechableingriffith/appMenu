@@ -8,6 +8,10 @@ import netlify from '@astrojs/netlify';
 export default defineConfig({
   output: 'server',
   adapter: netlify(),
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: 'hover', // o 'tap' para móviles
+  },
   integrations: [
     tailwind(),
     AstroPWA({
@@ -16,7 +20,7 @@ export default defineConfig({
         name: 'Eazy Peazy - Creando nuestro menú',
         short_name: 'EazyPeazy',
         description: 'Gestor de nuestro menú semanal e ingredientes',
-        theme_color: '##057A55', // Tu color Brand
+        theme_color: '#823eba', // Tu color Brand
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
