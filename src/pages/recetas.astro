@@ -26,7 +26,7 @@ if (error) console.error("Error de Supabase:", error);
 // Obtenemos los ingredientes existentes para el select
 const { data: ingredientesDB } = await supabase
   .from('ingredientes')
-  .select('nombre')
+  .select('*')
   .order('nombre', { ascending: true });
 
 const departamentos = ["Frutas y Verduras", "Carnes", "Lácteos", "Abarrotes", "Limpieza", "Congelados", "Panadería"];
@@ -132,7 +132,15 @@ const tiendas = ["Lidl", "Tesco", "Aldi", "Dunnes", "Otra"];
                           <label for="select-existente" class="block mb-2 text-sm font-medium text-heading">Elegir del catálogo:</label>
                           <select id="select-existente" class="block w-full p-2.5 bg-neutral-secondary-medium border border-default-medium rounded-base mb-3">
                               <option value="" selected>Selecciona un ingrediente...</option>
-                              {ingredientesDB?.map(i => <option value={i.nombre}>{i.nombre}</option>)}
+                              {ingredientesDB?.map(i => (
+                                  <option 
+                                      value={i.nombre} 
+                                      data-precio={i.precio} 
+                                      data-tienda={i.tienda}
+                                  >
+                                      {i.nombre} — {i.precio}€ ({i.tienda})
+                                  </option>
+                              ))}
                           </select>
                           <div class="text-right">
                             <button type="button" id="add-existente" disabled class="text-fg-disabled bg-disabled border border-default-medium font-medium rounded-base text-xs px-4 py-2 transition-all">Añadir</button>
@@ -215,7 +223,15 @@ const tiendas = ["Lidl", "Tesco", "Aldi", "Dunnes", "Otra"];
                       <label class="block mb-2 text-sm font-medium text-heading">Añadir del catálogo:</label>
                       <select id="up-select-existente" class="block w-full p-2.5 bg-neutral-secondary-medium border border-default-medium rounded-base mb-3 text-sm">
                           <option value="" selected>Selecciona un ingrediente...</option>
-                          {ingredientesDB?.map(i => <option value={i.nombre}>{i.nombre}</option>)}
+                          {ingredientesDB?.map(i => (
+                                  <option 
+                                      value={i.nombre} 
+                                      data-precio={i.precio} 
+                                      data-tienda={i.tienda}
+                                  >
+                                      {i.nombre} — {i.precio}€ ({i.tienda})
+                                  </option>
+                              ))}
                       </select>
                       <div class="text-right">
                         <button type="button" id="up-add-existente" disabled class="text-fg-disabled bg-disabled border border-default-medium font-medium rounded-base text-xs px-4 py-2 transition-all">Añadir</button>
